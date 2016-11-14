@@ -20,8 +20,8 @@ def GetNewFeature(f_dict , code):
     return new_feature
 
 def UseGA(f_dict):
-    ga=GA.Ga(MutationPropability,popsize,codesize,weight_file,num_of_one) # need add value
-    best=ga.main(f_dict)
+    ga=GA.Ga(MutationPropability,popsize,codesize,weight_file,num_of_one,f_dict) # need add value
+    best=ga.main()
     return
 
 #feature_dict[hint]=[[feature] , label]

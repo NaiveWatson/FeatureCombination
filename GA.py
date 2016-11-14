@@ -1,14 +1,15 @@
+import __future__
 import random
 import copy
 import time
 import heapq
 from numpy import random as nr
 import numpy as np
-import FeatureCombination
+import FeatureCombination as FC
 
 
 class Ga(self):
-    def __init__(self,MutationPropability,popsize,codesize,weight_file,num_of_one):
+    def __init__(self,MutationPropability,popsize,codesize,weight_file,num_of_one,f_dict):
         self.yourcode=[[]]
         self.BestCode=[]
         self.BestEvaluation=[]
@@ -19,6 +20,7 @@ class Ga(self):
         self.weightfile=weight_file
         self.probability=[0 for i in range(codesize)]
         self.num_of_one=num_of_one
+        self.f_dict=f_dict
 
     def CreateOneCode(self,probability):
         random_p=nr.uniform(0,1,self.codesize)
@@ -37,7 +39,8 @@ class Ga(self):
             probability[int(pair[0])-1] = float(pair[1])
         probability=np.array(probability)
         for _ in range(self.codesize):
-            self.yourcode.append(self.CreateOneCode(probability))
+            yourcodes.append(self.CreateOneCode(probability))
+        return yourcodes
 
     def Crossmotion(self,fater,mother):
         a=random.randint(0,len(father)/2-1)
@@ -79,8 +82,19 @@ class Ga(self):
         return true
 
     def Evaluate(self,codes):
-        #write your evaluate function
-        evaluation=0
+        evaluation = []
+        for code in codes:
+            new_num = 0
+            true_num = 0
+            new_with_true = 0
+            n_feature=FC.GetNewFeature(self.f_dict , code)
+            for hint in n_feature:
+                new_num += 1
+                true_num += 1
+                if n_feature[hint][0]==1 and n_feature[hint][1]==1:
+                    new_with_true += 1
+            eva=new_with_true/(new_num+true_num)
+            evaluation.append(eva)
         return evaluation
 
     def SelectPropability(self,code):
@@ -88,14 +102,25 @@ class Ga(self):
         selectpropability=[self.evaluations[i]/sum(self.evaluations) for i in range(len(self.evaluations))]
         return selectpropability
 
-    def main(self,f_dict):
-        self.CreateCodes()
-        for i in range(self.generation):
-            self.Crossover()
-            self.Mutation()
+    def SaveBest(self,evaluation,featuredict):
+        return
+
+    #包括两种更新方式，使用非线性分布概率选择
+    def UpdateCodes(self,codes):
+        return update_codes
+
+    def main(self):
+        codes = self.CreateCodes() #得到初始种群
+        init_evaluation = self.Evaluate(codes)
+        for _ in range(self.generation):
+            self.SaveBest(init_evaluation )
+            codes=self.UpdateCodes(codes)
+            u_evaluation=self.Evaluate(codes)
+            '''
             self.BestEvaluation.append(max(self.evaluations))
             maxindex=self.evaluations.index(max(self.evaluations))
             self.BestCode.append(self.yourcode[maxindex])
+            '''
         besteva=max(self.evaluations)
         bestcode=self.Bestcode[besteva]
         return besteva,bestcode

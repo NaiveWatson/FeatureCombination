@@ -10,11 +10,13 @@ codesize=0
 weight_file=0
 num_of_one=0
 
+#new_feature[hint]=[newfeature , label]
 def GetNewFeature(f_dict , code):
     new_feature={}
     for hint in f_dict:
         l=f_dict[hint][0]
         new_feature[hint]=[1 if code[l[r]]==1 else 0 for r in range(len(l))]
+        new_feature[hint].append(f_dict[hint][1])
     return new_feature
 
 def UseGA(f_dict):
@@ -22,7 +24,7 @@ def UseGA(f_dict):
     best=ga.main(f_dict)
     return
 
-
+#feature_dict[hint]=[[feature] , label]
 if __name__ == "__main__":
     feature_dict=defaultdict(list)
     for line in open(feature_inputfile):

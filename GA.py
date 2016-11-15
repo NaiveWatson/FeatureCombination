@@ -5,6 +5,7 @@ import time
 import heapq
 from numpy import random as nr
 import numpy as np
+from collections import defaultdict
 import FeatureCombination as FC
 
 
@@ -42,7 +43,7 @@ class Ga(self):
             yourcodes.append(self.CreateOneCode(probability))
         return yourcodes
 
-    def Crossmotion(self,fater,mother):
+    def RandomCrossmotion(self,fater,mother):
         a=random.randint(0,len(father)/2-1)
         b=random.randint(len(father)/2,len(mother)-1)
         s=father[0:a]+mother[a:b]+father[b:]
@@ -51,6 +52,17 @@ class Ga(self):
             if i not in son:
                 son.append(i)
         return son
+
+    def ProbabilityCrossmotion(self,fater,mother):
+        a=random.randint(0,len(father)/2-1)
+        b=random.randint(len(father)/2,len(mother)-1)
+        s=father[0:a]+mother[a:b]+father[b:]
+        son=[]
+        for i in s:
+            if i not in son:
+                son.append(i)
+        return son
+
     def Mutation(self):
         for i in range(len(self.yourcode)):
             if random.uniform(0,1)<self.MutationPropability:
@@ -97,24 +109,44 @@ class Ga(self):
             evaluation.append(eva)
         return evaluation
 
-    def SelectPropability(self,code):
+    def SelectCodes(self,codes):
         self.evaluations=self.Evaluate(code)
         selectpropability=[self.evaluations[i]/sum(self.evaluations) for i in range(len(self.evaluations))]
-        return selectpropability
+        return (f_code , m_code)
 
-    def SaveBest(self,evaluation,featuredict):
-        return
+    def SaveBest(self,evaluation,codes):
+        max_eva=max(evaluation)
+        best_code=codes[evaluation.index(max_eva)]
+        f=open('best_code.txt','a')
+        f.write(i for i in best_code)
+        f.close()
+        print ("evaluation : " , max_eva)
+
 
     #包括两种更新方式，使用非线性分布概率选择
-    def UpdateCodes(self,codes):
-        return update_codes
+    def UpdateCodes(self,codes,s_p):
+        c_d=defaultdict(list)
+        update_codes=[]
+        for i in range(self.codesize):
+            r=random.random()
+            if r <= s_p:
+                (f_code,m_code) = self.SelectCodes(codes)
+                new_code = self.RandomCrossmotion(f_code,m_code)
+                c_d['random'].append(new_code)
+            else:
+                (f_code,m_code) = self.SelectCodes(codes)
+                new_code = self.ProbabilityCrossmotion(f_code,m_code)
+                c_d['probability'].append(new_code)
+            updat
+        return (update_codes , c_d)
 
     def main(self):
         codes = self.CreateCodes() #得到初始种群
         init_evaluation = self.Evaluate(codes)
+        select_probability=0.5
         for _ in range(self.generation):
-            self.SaveBest(init_evaluation )
-            codes=self.UpdateCodes(codes)
+            self.SaveBest(init_evaluation , codes)
+            (codes , codes_distribution)=self.UpdateCodes(codes , select_probability)
             u_evaluation=self.Evaluate(codes)
             '''
             self.BestEvaluation.append(max(self.evaluations))

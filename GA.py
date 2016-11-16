@@ -44,24 +44,26 @@ class Ga(self):
         return yourcodes
 
     def RandomCrossmotion(self,fater,mother):
-        a=random.randint(0,len(father)/2-1)
-        b=random.randint(len(father)/2,len(mother)-1)
-        s=father[0:a]+mother[a:b]+father[b:]
-        son=[]
-        for i in s:
-            if i not in son:
-                son.append(i)
-        return son
+        new_code=[]
+        for i in range(self.codesize):
+            new_code.append(random.choice([fater[i] , mother[i]]))
+        while sum(new_code) < self.num_of_one:
+            a=random.randint(0,self.codesize)
+            new_code[a] = 1
+        return new_code
 
-    def ProbabilityCrossmotion(self,fater,mother):
-        a=random.randint(0,len(father)/2-1)
-        b=random.randint(len(father)/2,len(mother)-1)
-        s=father[0:a]+mother[a:b]+father[b:]
-        son=[]
-        for i in s:
-            if i not in son:
-                son.append(i)
-        return son
+    def ProbabilityCrossmotion(self,f_code,m_code,f_evaluation,m_evaluation):
+        pf=f_evaluation/(f_evaluation+m_evaluation)
+        new_code=[]
+        for i in range(self.codesize):
+            if random.random() > pf:
+                new_code.append(m_code[i])
+            else:
+                new_code.append(f_code[i])
+        while sum(new_code) < self.num_of_one:  #暂时使用随机补全
+            a=random.randint(0,self.codesize)
+            new_code[a] = 1
+        return new_code
 
     def Mutation(self):
         for i in range(len(self.yourcode)):
@@ -108,11 +110,14 @@ class Ga(self):
             eva=new_with_true/(new_num+true_num)
             evaluation.append(eva)
         return evaluation
-
-    def SelectCodes(self,codes):
-        self.evaluations=self.Evaluate(code)
-        selectpropability=[self.evaluations[i]/sum(self.evaluations) for i in range(len(self.evaluations))]
-        return (f_code , m_code)
+    
+    #暂时使用随机选择
+    def SelectCodes(self,codes,u_evaluation):
+        f_evaluation = random.choice(u_evaluation)
+        f_code = codes[u_evaluation.index(f_evaluation)]
+        m_evaluation = random.choice(u_evaluation)
+        m_code = codes[u_evaluation.index(f_evaluation)]
+        return (f_code,m_code,f_evaluation,m_evaluation)
 
     def SaveBest(self,evaluation,codes):
         max_eva=max(evaluation)
@@ -121,32 +126,58 @@ class Ga(self):
         f.write(i for i in best_code)
         f.close()
         print ("evaluation : " , max_eva)
-
+    
+    def UpdateProbability(self,s_p,eva):
+        c=0
+        beta1=0.5
+        beta2=0.5
+        PN=[]
+        sum_p=0
+        up=sorted(eva , reverse=True)
+        p1=c/self.popsize
+        pm=(2-c)/self.popsize
+        PN.append(pm)
+        for i in range(1,self.popsize-1):
+            pi=pm+(self.popsize-i)*(pm-1)/(self.popsize-1)
+            PN.append(pi)
+        PN.append(p1)
+        mean_eva=sum(up)/len(up)
+        for i in range(self.popsize):
+            if up[i]>mean_eva:
+                sum_p+=PN[i]
+        if sum_p > 0.75:
+            s_p=s_p+beta1*s_p*(1-s_p)
+        elif sum_p < 0.35:
+            s_p=s_p-beta2*s_p*(1-s_p)
+        return s_p
 
     #包括两种更新方式，使用非线性分布概率选择
-    def UpdateCodes(self,codes,s_p):
+    def UpdateCodes(self,codes,s_p,u_evaluation):
         c_d=defaultdict(list)
+        eva=[]
         update_codes=[]
         for i in range(self.codesize):
             r=random.random()
             if r <= s_p:
-                (f_code,m_code) = self.SelectCodes(codes)
+                (f_code,m_code,f_evaluation,m_evaluation) = self.SelectCodes(codes,u_evaluation)
                 new_code = self.RandomCrossmotion(f_code,m_code)
                 c_d['random'].append(new_code)
             else:
-                (f_code,m_code) = self.SelectCodes(codes)
-                new_code = self.ProbabilityCrossmotion(f_code,m_code)
+                (f_code,m_code,f_evaluation,m_evaluation) = self.SelectCodes(codes,u_evaluation)
+                new_code = self.ProbabilityCrossmotion(f_code,m_code,f_evaluation,m_evaluation)
                 c_d['probability'].append(new_code)
-            updat
-        return (update_codes , c_d)
+            update_codes.append(new_code)
+        eva=self.Evaluate(c_d['probability'])
+        s_p = self.UpdateProbability(s_p,eva)
+        return (update_codes , c_d , s_p)
 
     def main(self):
         codes = self.CreateCodes() #得到初始种群
-        init_evaluation = self.Evaluate(codes)
+        u_evaluation = self.Evaluate(codes)
         select_probability=0.5
         for _ in range(self.generation):
-            self.SaveBest(init_evaluation , codes)
-            (codes , codes_distribution)=self.UpdateCodes(codes , select_probability)
+            self.SaveBest(u_evaluation , codes)
+            (codes , codes_distribution , select_probability)=self.UpdateCodes(codes , select_probability , u_evaluation)
             u_evaluation=self.Evaluate(codes)
             '''
             self.BestEvaluation.append(max(self.evaluations))
